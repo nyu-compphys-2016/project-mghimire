@@ -1,8 +1,7 @@
 from __future__ import division
 import numpy as np
-import pylab as plt
-from mpl_toolkits.mplot3d import Axes3D
 import difeq
+import h5py as h5
 
 
 #contents-------------------------------------------------------------------------
@@ -20,8 +19,7 @@ import difeq
 ##initial condition parameters
 ##init: initial position and velocity generator
 
-##part that runs program
-##plotter
+##part that runs program and saves results
 
 #constants----------------------------------------------------------------------------------------
 G = 6.67408e-20                         #gravitational constant in km^3/kgs^2
@@ -34,9 +32,9 @@ h = 0.7
 
 #simulation parameters----------------------------------------------------------------------------
 L = 1000                                #mesh size per dimension in Mpc
-n = 10                                  #number of particles per dimension
+n = 100                                 #number of particles per dimension
 M = Om*rhocrit*L**3*Mpctokm**3/n**3     #mass per particle for evenly distributed mass in kg
-N = 10                                  #number of steps for evolution of a
+N = 100                                 #number of steps for evolution of a
 af = 1                                  #final a (today)
 
 #difeq function-----------------------------------------------------------------------------------
@@ -205,15 +203,15 @@ P = np.concatenate(([[0,0]],P))
 P[:,0] = P[:,0]/h
 P[:,1] = P[:,1]/h**3
 
+Sx,Sy,Sz = init(P)
+
 x = np.zeros((n,n,n,3))
 Z = np.zeros((n,n,n,3))
 for k in range(n):
     for j in range(n):
         for i in range(n):
-            x[i,j,k] = np.array([i,j,k])
-            Z[i,j,k] = np.array([i,j,k])
-
-Sx,Sy,Sz = init(P)
+            x[i,j,k] = np.array([i*L/n,j*L/n,k*L/n])
+            Z[i,j,k] = np.array([i*L/n,j*L/n,k*L/n])
 
 x[:,:,:,0] = x[:,:,:,0] + D0*Sx
 x[:,:,:,1] = x[:,:,:,1] + D0*Sy
@@ -240,24 +238,27 @@ for k in range(n):
             V.append(v[i,j,k])
             Zel.append(Z[i,j,k])
 
-X = np.array(X)
+X = np.array(X)%L
 V = np.array(V)
-print V
-Zel = np.array(Zel)%n
+
+Zel = np.array(Zel)%L
+
 r0 = np.concatenate((X,V),axis=1)
 
 A,R = difeq.rk4(f,r0,a0,af,N)
 
+IC = h5.File("initcon.dat", "w")
+results = h5.File("results.dat", "w")
+Zeldovich = h5.File("Zeldovich.dat", "w")
 
+iset = IC.create_dataset("array", R[0][:,0:3].shape, dtype=np.float)
+iset[...] = R[0][:,0:3]
+dset = results.create_dataset("array", R[-1][:,0:3].shape, dtype=np.float)
+dset[...] = R[-1][:,0:3]%L
+pset = Zeldovich.create_dataset("array", Zel.shape, dtype=np.float)
+pset[...] = Zel
 
-##fig = plt.figure()
-##ax = fig.add_subplot(111, projection='3d')
-####ax.scatter(R[0][:,0],R[0][:,1],R[0][:,2],c='b', marker='.')
-##ax.scatter(R[-1][:,0],R[-1][:,1],R[-1][:,2],c='r', marker='o')
-##ax.scatter(Zel[:,0],Zel[:,1],Zel[:,2],c='g', marker='o')
-##
-##ax.set_xlabel('x')
-##ax.set_ylabel('y')
-##ax.set_zlabel('z')
-##plt.show()
+IC.close()
+results.close()
+Zeldovich.close()
 
