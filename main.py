@@ -54,9 +54,10 @@ def derphi(X,a,L):
     xderphik = np.zeros(delk.shape) + 0j
     yderphik = np.zeros(delk.shape) + 0j
     zderphik = np.zeros(delk.shape) + 0j
-    for k in range(delk.shape[0]):
-        for l in range(delk.shape[1]):
-            for m in range(delk.shape[2]):
+    n = delk.shape[0]
+    for k in range(-n//2+1,n//2+1):
+        for l in range(-n//2+1,n//2+1):
+            for m in range(0,n//2+1):
                 K2 = k**2+l**2+m**2
                 if not(K2 == 0):
                     xderphik[k,l,m] = -2j*G*Om*rhocrit*Lk*k*delk[k,l,m]/(a*K2)
@@ -93,7 +94,7 @@ def CIC(X,L):
     return rho
 
 ##ICIC function-----------------------------------------------------------------------------------
-def ICIC(X,xderphi,yderphi,zderphi):
+def ICIC(X,xderphi,yderphi,zderphi,L):
     "takes in vector of positions and 3D arrays of derphi in each direction"
     "and uses inverse cloud in cell interpolation to calculate effect of the"
     "derphi arrays on each point, and returns ordered vector of gradphi for"
@@ -166,6 +167,6 @@ def Pw(P,L,k,l,m):
     "takes in power function and fourier coordinates and linearly interpolates power value for"
     "given coordinates"
     K = np.sqrt(k**2+l**2+m**2)
-    K = K*(Pw.shape[0]-1)/L
+    K = K*(P.shape[0]-1)/L
     Power = P[int(K),1] + (K - int(K))*(P[int(K)+1,1]-P[int(K),1])
     return Power

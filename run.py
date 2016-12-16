@@ -7,10 +7,10 @@ import main
 
 #simulation parameters----------------------------------------------------------------------------
 L = 100                                 #mesh size per dimension in Mpc/h
-Lk = L*Mpcphtokm                        #mesh size per dimension in km
-n = 100                                 #number of particles per dimension
+n = 10                                  #number of particles per dimension
 N = 100                                 #number of steps for evolution of a
 af = 1                                  #final a (today)
+Mpcphtokm = 4.081e19                    #unit converters
 
 ##initial condition parameters--------------------------------------------------------------------
 a0 = 0.02                               #scale factor for an initial redshift of 49
@@ -29,7 +29,7 @@ P = np.array(arr)
 P = np.concatenate(([[0,0]],P))
 P[:,1] = P[:,1]*D0**2
 
-Sx,Sy,Sz = main.init(P,n)
+Sx,Sy,Sz = main.init(P,n,L)
 
 x = np.zeros((n,n,n,3))
 Z = np.zeros((n,n,n,3))
@@ -77,9 +77,9 @@ def func(r,a):
 
 A,R = difeq.rk4(func,r0,a0,af,N)
 
-IC = h5.File("initcon.dat", "w")
-results = h5.File("results.dat", "w")
-Zeldovich = h5.File("Zeldovich.dat", "w")
+IC = h5.File("initcon10.dat", "w")
+results = h5.File("results10.dat", "w")
+Zeldovich = h5.File("Zeldovich10.dat", "w")
 
 iset = IC.create_dataset("array", R[0][:,0:3].shape, dtype=np.float)
 iset[...] = R[0][:,0:3]
