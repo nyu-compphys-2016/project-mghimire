@@ -19,8 +19,6 @@ import pylab as plt
 ##initial condition parameters
 ##init: initial position and velocity generator
 
-##part that runs program and saves results
-
 #constants----------------------------------------------------------------------------------------
 G = 6.67408e-20                         #gravitational constant in km^3/kgs^2
 rhocrit = 8.58e-18                      #approximate critical density of universe in kg/km^3
@@ -29,23 +27,15 @@ Ode = 0.7                               #density of dark energy today in units o
 Mpcphtokm = 4.081e19                    #unit converters
 kmtoMpcph = 1/Mpcphtokm         
 
-#simulation parameters----------------------------------------------------------------------------
-L = 100                                 #mesh size per dimension in Mpc/h
-Lk = L*Mpcphtokm                        #mesh size per dimension in km
-n = 100                                 #number of particles per dimension
-M = Om*rhocrit*L**3*Mpcphtokm**3/n**3   #mass per particle for evenly distributed mass in kg
-N = 100                                 #number of steps for evolution of a
-af = 1                                  #final a (today)
-
 #difeq function-----------------------------------------------------------------------------------
-def f(r,a):
-    "takes in r = [X,V] and a, where X is an ordered vector of positions, V"
-    "is an ordered vector of velocities, and a is the scale factor, and returns"
-    "the corresponding derivatives of X and V"
+def f(r,a,L):
+    "takes in r = [X,V], a, and L where X is an ordered vector of positions, V"
+    "is an ordered vector of velocities, and a is the scale factor, and L is the"
+    "box size, and returns the corresponding derivatives of X and V"
     X = r[:,0:3]%L
     V = r[:,3:6]
     derx = kmtoMpcph*V
-    derv = -(3/(2*a))*(Ode*a**3/(Om+Ode*a**3)+1)*V-derphi(X,a)/dera(a)**2
+    derv = -(3/(2*a))*(Ode*a**3/(Om+Ode*a**3)+1)*V-derphi(X,a,L)/dera(a)**2
     return np.concatenate((derx,derv),axis=1)
 
 #auxiliary functions------------------------------------------------------------------------------
@@ -54,20 +44,13 @@ def dera(a):
     return np.sqrt((8*np.pi*G*rhocrit/3)*(Om*a+Ode*a**4))
 
 ##derphi function---------------------------------------------------------------------------------
-def derphi(X,a):
+def derphi(X,a,L):
     "takes in vector of positions and scale factor and outputs the gradient of"
     "phi"
+    Lk = L*Mpcphtokm
     meanrho = Om*rhocrit
-    delta = (CIC(X) - meanrho)/meanrho
+    delta = (CIC(X,L)/Mpcphtokm**3 - meanrho)/meanrho
     delk = np.fft.rfftn(delta)
-##    phik = np.zeros(rhok.shape)
-##    for k in range(rhok.shape[0]):
-##        for l in range(rhok.shape[1]):
-##            for m in range(rhol.shape[2]):
-##                if not(k == l == m == 0):
-##                    phik[k,l,m] = G*Om*rhocrit*Lk**2*rhok[k,l,m]\
-##                                  /(np.pi*a*(k**2+l**2+m**2))
-##    phi = np.fft.ifftn(phik)
     xderphik = np.zeros(delk.shape) + 0j
     yderphik = np.zeros(delk.shape) + 0j
     zderphik = np.zeros(delk.shape) + 0j
@@ -83,12 +66,14 @@ def derphi(X,a):
     yderphi = np.fft.irfftn(yderphik)
     zderphi = np.fft.irfftn(zderphik)
 
-    return ICIC(X,xderphi,yderphi,zderphi)
+    return ICIC(X,xderphi,yderphi,zderphi,L)
 
 ##CIC function------------------------------------------------------------------------------------
-def CIC(X):
+def CIC(X,L):
     "takes in vector of positions and array of masses and outputs 3D array of"
     "densities at the grid centers"
+    n = int(np.round(X.shape[0]**(1/3)))
+    M = Om*rhocrit*L**3*Mpcphtokm**3/n**3   #mass per particle for evenly distributed mass in kg
     rho = np.zeros([n,n,n])
     X = X/(L/n)
     Kp = X.astype(np.int64)
@@ -105,7 +90,7 @@ def CIC(X):
         rho[K[i,0],K1[i,1],K1[i,2]] = rho[K[i,0],K1[i,1],K1[i,2]] + M*T[i,0]*D[i,1]*D[i,2]
         rho[K1[i,0],K[i,1],K1[i,2]] = rho[K1[i,0],K[i,1],K1[i,2]] + M*D[i,0]*T[i,1]*D[i,2]
         rho[K1[i,0],K1[i,1],K1[i,2]] = rho[K1[i,0],K1[i,1],K1[i,2]] + M*D[i,0]*D[i,1]*D[i,2]
-    return rho/Mpcphtokm**3
+    return rho
 
 ##ICIC function-----------------------------------------------------------------------------------
 def ICIC(X,xderphi,yderphi,zderphi):
@@ -113,6 +98,7 @@ def ICIC(X,xderphi,yderphi,zderphi):
     "and uses inverse cloud in cell interpolation to calculate effect of the"
     "derphi arrays on each point, and returns ordered vector of gradphi for"
     "each particle"
+    n = xderphi.shape[0]
     gradphi = np.zeros((n**3,3))
     X = X/(L/n)
     Kp = X.astype(np.int64)
@@ -147,21 +133,15 @@ def ICIC(X,xderphi,yderphi,zderphi):
 
     return gradphi
 
-##initial condition parameters--------------------------------------------------------------------
-a0 = 0.02                               #scale factor for an initial redshift of 49
-D0 = 0.0256745                          #linear growth function at redshift 49
-da0 = dera(a0)                          #initial derivative of a with respect to conformal time
-H0 = da0/a0                             #initial H
-
 ##init function-----------------------------------------------------------------------------------
-def init(P):
+def init(P,n,L):
     "takes in power spectrum and generates initial perturbations"
     A = np.zeros((n,n,n//2+1))
     B = np.zeros((n,n,n//2+1))
     for k in range(-n//2+1,n//2+1):
         for l in range(-n//2+1,n//2+1):
             for m in range(0,n//2+1):
-                Pklm = Pw(P,k,l,m)
+                Pklm = Pw(P,L,k,l,m)
                 A[k,l,m] = np.sqrt(Pklm/2)*np.random.normal(0,1)
                 B[k,l,m] = np.sqrt(Pklm/2)*np.random.normal(0,1)
     delta = A+1j*B
@@ -182,85 +162,10 @@ def init(P):
 
     return xphi,yphi,zphi
 ##power interpolator------------------------------------------------------------------------------
-def Pw(P,k,l,m):
+def Pw(P,L,k,l,m):
     "takes in power function and fourier coordinates and linearly interpolates power value for"
     "given coordinates"
     K = np.sqrt(k**2+l**2+m**2)
-    K = K*5000/L
+    K = K*(Pw.shape[0]-1)/L
     Power = P[int(K),1] + (K - int(K))*(P[int(K)+1,1]-P[int(K),1])
     return Power
-
-##run functions-----------------------------------------------------------------------------------
-
-data = open("linearpower_Box1000.dat", "r")
-
-arr = []
-for line in data:
-    values = line.split()
-    row = [float(x) for x in values]
-    arr.append(row)
-data.close()
-
-P = np.array(arr)
-P = np.concatenate(([[0,0]],P))
-P[:,1] = P[:,1]*D0**2
-
-Sx,Sy,Sz = init(P)
-
-x = np.zeros((n,n,n,3))
-Z = np.zeros((n,n,n,3))
-for k in range(n):
-    for j in range(n):
-        for i in range(n):
-            x[i,j,k] = np.array([i*L/n,j*L/n,k*L/n])
-            Z[i,j,k] = np.array([i*L/n,j*L/n,k*L/n])
-
-x[:,:,:,0] = x[:,:,:,0] + D0*Sx
-x[:,:,:,1] = x[:,:,:,1] + D0*Sy
-x[:,:,:,2] = x[:,:,:,2] + D0*Sz
-
-Z[:,:,:,0] = Z[:,:,:,0] + Sx
-Z[:,:,:,1] = Z[:,:,:,1] + Sy
-Z[:,:,:,2] = Z[:,:,:,2] + Sz
-
-
-v = np.zeros((n,n,n,3))
-v[:,:,:,0] = D0*Sx*Mpcphtokm/a0
-v[:,:,:,1] = D0*Sy*Mpcphtokm/a0
-v[:,:,:,2] = D0*Sz*Mpcphtokm/a0
-
-X = []
-V = []
-Zel = []
-
-for k in range(n):
-    for j in range(n):
-        for i in range(n):
-            X.append(x[i,j,k])
-            V.append(v[i,j,k])
-            Zel.append(Z[i,j,k])
-
-X = np.array(X)%L
-V = np.array(V)
-
-Zel = np.array(Zel)%L
-
-r0 = np.concatenate((X,V),axis=1)
-
-A,R = difeq.rk4(f,r0,a0,af,N)
-
-IC = h5.File("initcon.dat", "w")
-results = h5.File("results.dat", "w")
-Zeldovich = h5.File("Zeldovich.dat", "w")
-
-iset = IC.create_dataset("array", R[0][:,0:3].shape, dtype=np.float)
-iset[...] = R[0][:,0:3]
-dset = results.create_dataset("array", R[-1][:,0:3].shape, dtype=np.float)
-dset[...] = R[-1][:,0:3]%L
-pset = Zeldovich.create_dataset("array", Zel.shape, dtype=np.float)
-pset[...] = Zel
-
-IC.close()
-results.close()
-Zeldovich.close()
-

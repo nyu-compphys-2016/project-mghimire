@@ -1,7 +1,6 @@
 from __future__ import division
 import numpy as np
 import pylab as plt
-from mpl_toolkits.mplot3d import Axes3D
 import h5py as h5
 
 ##reads results file and plots 3D plot of results
@@ -86,8 +85,8 @@ Zeldovich.close()
 ##plt.clf()
 ##
 ##ax = fig.add_subplot(111, axisbg='black')
-##ax.scatter(XR, YR, s=2, facecolor='0.5', lw = 0, c='g', marker='o')
-##ax.scatter(XZ, YZ, s=2, facecolor='0.5', lw = 0, c='r', marker='o')
+##ax.scatter(XR, YR, s=2, facecolor='0.5', lw = 0, c='r', marker='o')
+##ax.scatter(XZ, YZ, s=2, facecolor='0.5', lw = 0, c='g', marker='o')
 ##plt.xlabel('$x$ (Mpc/h)')
 ##plt.ylabel('$y$ (Mpc/h)')
 ##plt.xlim((0,100))
