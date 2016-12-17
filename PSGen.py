@@ -36,6 +36,8 @@ data.close()
 P = np.array(arr)
 
 meanrho = Om*rhocrit/kmtoMpch**3
+print meanrho
+
 Rho = main.CIC(R,L)
 Zrho = main.CIC(Z,L)
 ##Irho = main.CIC(I,L)
@@ -47,20 +49,20 @@ delk = np.fft.rfftn(delta)
 zelk = np.fft.rfftn(zelta)
 ##ielk = np.fft.rfftn(ielta)
 
-PR = np.zeros((n+1,3))  #first column is for frequencies, second column is for
+PR = np.zeros((2*n+1,3))  #first column is for frequencies, second column is for
                         #Power values, third column is for counting number of
                         #modes in k-shell
-PZ = np.zeros((n+1,3))
+PZ = np.zeros((2*n+1,3))
 ##PI = np.zeros((n+1,3))
 
-PR[:,0] = np.arange(n+1)*2*np.pi/L
-PZ[:,0] = np.arange(n+1)*2*np.pi/L
+PR[:,0] = np.arange(2*n+1)*np.pi/L
+PZ[:,0] = np.arange(2*n+1)*np.pi/L
 ##PI[:,0] = np.arange(n+1)*2*np.pi/L
 
 for k in range(-n//2+1,n//2+1):
     for l in range(-n//2+1,n//2+1):
         for m in range(0,n//2+1):
-            K2 = np.sqrt(k**2 + l**2 + m**2)
+            K2 = 2*np.sqrt(k**2 + l**2 + m**2)
             PR[int(round(K2)),1] = PR[int(round(K2)),1] + np.abs(delta[k,l,m])**2
             PR[int(round(K2)),2] = PR[int(round(K2)),2] + 1
             PZ[int(round(K2)),1] = PZ[int(round(K2)),1] + np.abs(zelta[k,l,m])**2
@@ -69,7 +71,7 @@ for k in range(-n//2+1,n//2+1):
             ##PI[int(round(K2)),2] = PI[int(round(K2)),2] + 1
 
 
-for i in range(n+1): #to get rid of division by zero
+for i in range(2*n+1): #to get rid of division by zero
     if PR[i,2] == 0:
         PR[i,2] = 1
     if PZ[i,2] == 0:
@@ -78,17 +80,21 @@ for i in range(n+1): #to get rid of division by zero
 ##        PI[i,2] = 1
 
 PR[:,1] = PR[:,1]/PR[:,2]
+PR[:,1] = PR[:,1] - L**3/(510000*(2*np.pi)**3)
+
+print PR
+
 PZ[:,1] = PZ[:,1]/PZ[:,2]
 ##PI[:,1] = PI[:,1]/PI[:,2]
 
 
-plt.bar(PR[:,0],PR[:,1],2*np.pi/100,color='mistyrose')
-plt.bar(PZ[:,0],PZ[:,1],2*np.pi/100,color='palegreen')
-plt.plot(P[:,0],P[:,1],"b-")
+plt.loglog(P[:,0],P[:,1],"b-")
+plt.loglog(PR[:,0],PR[:,1],"r-")
+plt.loglog(PZ[:,0],PZ[:,1],"g-")
 plt.xlabel("frequency $k$ $(h/$Mpc$)$")
 plt.ylabel("Power $P(k)$ $((h/$Mpc$)^3)$")
-plt.legend(prop={'size':10}, loc='upper right', labels=["Original", "Data", "Zel'dovich"])
-plt.savefig("PSComparison")
+plt.legend(prop={'size':10}, loc='upper right', labels=["Original", "Simulation", "Zel'dovich"])
+plt.savefig("PSComparisonloglog")
 
 ##plt.bar(PI[:,0],PI[:,1],2*np.pi/100,color='mistyrose')
 ##plt.plot(P[:,0],P[:,1]*D0**2,"b-")

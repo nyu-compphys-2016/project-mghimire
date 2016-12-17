@@ -7,7 +7,7 @@ import main
 
 #simulation parameters----------------------------------------------------------------------------
 L = 100                                 #mesh size per dimension in Mpc/h
-n = 10                                  #number of particles per dimension
+n = 100                                 #number of particles per dimension
 N = 100                                 #number of steps for evolution of a
 af = 1                                  #final a (today)
 Mpcphtokm = 4.081e19                    #unit converters
@@ -77,9 +77,9 @@ def func(r,a):
 
 A,R = difeq.rk4(func,r0,a0,af,N)
 
-IC = h5.File("initcon10.dat", "w")
-results = h5.File("results10.dat", "w")
-Zeldovich = h5.File("Zeldovich10.dat", "w")
+IC = h5.File("initcon.dat", "w")
+results = h5.File("results.dat", "w")
+Zeldovich = h5.File("Zeldovich.dat", "w")
 
 iset = IC.create_dataset("array", R[0][:,0:3].shape, dtype=np.float)
 iset[...] = R[0][:,0:3]
