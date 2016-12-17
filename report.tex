@@ -28,14 +28,15 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-	This paper summarizes a particle mesh simulation of the large-scale structure of dark matter today.
-	The simulation uses gaussian random fields and FFTs to produce initial conditions at redshift 50
-	from a power spectrum, cloud-in-cell interpolation to map particles' masses onto grid points to
-	find density fluctuations, FFTs to solve a Poisson equation for gravitational potential, cloud-in-cell
-	interpolation to map forces from grid points onto the particles, and a Runge-Kutta solver of order 4
-	to evolve the particles in time. The scale factor of the universe is used instead of time as the
-	evolution parameter, and it is evolved to modern day. A power spectrum is then produced from
-	the results and compared to the original power spectrum used to set the initial conditions.
+	This paper summarizes a particle mesh simulation of the evolution of large-scale structure of dark 
+	matter. The simulation uses gaussian random fields and FFTs to produce initial conditions at 
+	redshift 50 from a power spectrum, cloud-in-cell interpolation to map particles' masses onto grid 
+	points to find density fluctuations, FFTs to solve a Poisson equation for gravitational potential, 
+	cloud-in-cell interpolation to map forces from grid points onto the particles, and a Runge-Kutta 
+	solver of order 4 to evolve the particles in time. The scale factor of the universe is used instead of 
+	time as the evolution parameter, and it is evolved to modern day. A power spectrum is then 
+	produced from the results and compared to the Zel'dovich approximation as well as the original 
+	power spectrum used to set the initial conditions.
 \end{abstract}
 
 \section*{Introduction}
@@ -236,18 +237,21 @@ more compactly in the simulation results than in the Zel'dovich approximation, a
 to the effects of gravity being present in the simulation and absent from the Zel'dovich approximation.
 
 However, from Figure 5 we can see that there is quite some discrepancy between the original power 
-spectrum and the simulated as well as Zel'dovich spectra. There are numerous reasons as to why
-this would be the case.
+spectrum and the simulated spectra. Although there are some similarities between the simulation power 
+spectrum and the Zel'dovich power spectrum, such as the positions of the noise peaks, these are not 
+significant There are numerous reasons as to why there is such a difference between the simulated 
+and original power spectra.
 
-First and foremost, even though I used a million particles for the simulation, this was only a hundred
+First and foremost, even though I used a million particles for the simulation, there were only a hundred
 particles per dimension. This equates to only a hundred Fourier modes per dimension, which is not
-a very large number of data points for a power spectrum, especially when the first frequency mode 
+a very large number of data points for a power spectrum, especially when compared to the 5000 in the 
+original power spectrum. Further, the first frequency mode of the simulated spectrum
 starts at the large value of $0.0628$, which is 50 times $0.00126$, the first frequency in the 
-power spectrum used to produce the initial conditions. Therefore, the resolution of the simulated data
-was far less than the resolution of the original power spectrum. In order to match the resolution,
-the box size and particle number would have to be increased by a factor of 125,000, which would be
-is incredibly computationally demanding. However, this might be the next order of business, so it would
-be worth finding ways to optimize the code.
+power spectrum used to produce the initial conditions. Therefore, the resolution and frequency range of 
+the simulated data was far less than the resolution of the original power spectrum. In order to match the 
+resolution, the box size and particle number would have to be increased by a factor of 125,000, which 
+would be is incredibly computationally demanding. However, this might be the next order of business, 
+so it would be worth finding ways to optimize the code.
 
 This model also assumes that only local forces significantly affects the trajectory of the particle, since 
 each adjacent grid point is separated by 1 Mpc/h, a distance at which each particle has a gravitational 
